@@ -1,4 +1,5 @@
 import os
+import queue
 
 
 def print_identation(n):
@@ -24,13 +25,21 @@ def print_dir_tree(dirName, fileList, lvl):
         print_filename(fname, lvl)
 
 
+def crawl(root_dir):
+    dirs = queue.Queue()
+    dirs.put(root_dir)
+    while not dirs.empty():
+        root_dir = dirs.get()
+        print(root_dir)
+        files = os.listdir(root_dir)
+        for file in files:
+            file_path_abs = os.path.join(root_dir, file)
+            if os.path.isdir(file_path_abs):
+                dirs.put(file_path_abs)
+            else:
+                print(file_path_abs)
+
+
 if __name__ == "__main__":
-    rootDir = '/home/mzarudzki/crawler_test'
-    lvl = 0
-    for dirName, subdirList, fileList in os.walk(rootDir,
-                                                 topdown=True,
-                                                 followlinks=False):
-        print_dir_tree(dirName, fileList, lvl)
-        lvl += 1
-
-
+    root_dir = '/home/mzarudzki/crawler_test'
+    crawl(root_dir)
