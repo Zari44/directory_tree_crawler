@@ -1,28 +1,20 @@
 import os
 import queue
+import threading
 
 
-def print_identation(n):
-    i = 0
-    while i < n:
-        print('\t', end='')
-        i += 1
+class myThread (threading.Thread):
 
 
-def print_dir(dirName, lvl = 0):
-    print_identation(lvl)
-    print(dirName)
+   def __init__(self, root_dir):
+      threading.Thread.__init__(self)
+      self.root_dir = root_dir
 
 
-def print_filename(filename, lvl = 0):
-    print_identation(lvl)
-    print('\t%s' % filename)
-
-
-def print_dir_tree(dirName, fileList, lvl):
-    print_dir(dirName, lvl)
-    for fname in fileList:
-        print_filename(fname, lvl)
+   def run(self):
+      print ("Starting scrawling " + self.root_dir)
+      crawl(self.root_dir)
+      print ("Exiting scrawling " + self.root_dir)
 
 
 def crawl(root_dir):
@@ -37,9 +29,17 @@ def crawl(root_dir):
             if os.path.isdir(file_path_abs):
                 dirs.put(file_path_abs)
             else:
-                print(file_path_abs)
+                print(file)
 
 
 if __name__ == "__main__":
     root_dir = '/home/mzarudzki/crawler_test'
-    crawl(root_dir)
+
+    # Create new threads
+    thread1 = myThread(root_dir)
+
+    # Start new Threads
+    thread1.start()
+    thread1.join()
+    print("Exiting Main Thread")
+
