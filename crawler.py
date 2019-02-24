@@ -1,6 +1,5 @@
 import os
 import queue
-import threading
 import logging
 
 
@@ -9,32 +8,9 @@ logging.basicConfig(
     format='%(message)s'
 )
 
-dirs = queue.Queue()
-
-class crawlingThread (threading.Thread):
-
-
-   def __init__(self, thread_name):
-      threading.Thread.__init__(self)
-      self.thread_name = thread_name
-
-
-   def run(self):
-      logging.warning('Starting ' + self.thread_name)
-      crawl_utils(dirs)
-      logging.warning('Stopping ' + self.thread_name)
-
-
-def crawl(root_dir, n = 1):
+def crawl(root_dir):
+    dirs = queue.Queue()
     dirs.put(root_dir)
-    threads_pool = []
-    for i in range(1,n+1):
-        thread = crawlingThread("thread"+str(i))
-        thread.start()
-        threads_pool.append(thread)
-
-
-def crawl_utils(dirs):
     while not dirs.empty():
         root_dir = dirs.get()
         print(root_dir)
@@ -52,5 +28,5 @@ def crawl_utils(dirs):
 
 if __name__ == "__main__":
     root_dir = '/home/mzarudzki/qt_workspace'
-    crawl(root_dir, 10)
+    crawl(root_dir)
     logging.warning("Exiting Main Thread")
