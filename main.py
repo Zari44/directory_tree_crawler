@@ -14,33 +14,33 @@ logging.basicConfig(
 class TaskQueue:
 
     def __init__(self):
-        self.dirs = queue.Queue()
-        self.tasks = queue.Queue()
+        self._tasks = queue.Queue()
+        self._running_tasks = queue.Queue()
 
-    def no_running_tasks(self):
-        return self.tasks.empty()
+    def are_running_tasks(self):
+        return not self._running_tasks.empty()
 
-    def running_tasks(self):
-        return self.tasks.qsize()
+    def no_available_tasks(self):
+        return self._tasks.empty()
 
-    def no_directories(self):
-        return self.dirs.empty()
+    def available_tasks(self):
+        return self._tasks.qsize()
 
     def put(self, directory_path):
-        self.dirs.put(directory_path)
-        self.tasks.put(None)
+        self._tasks.put(directory_path)
+        self._running_tasks.put(None)
 
-    def get_directory(self):
-        return self.dirs.get()
+    def get(self):
+        return self._tasks.get()
 
     def task_finished(self):
-        self.tasks.get()
+        self._running_tasks.get()
 
 
 task_queue = TaskQueue()
 
-dirs = queue.Queue()
-tasks = queue.Queue()
+# dirs = queue.Queue()
+# tasks = queue.Queue()
 
 lock = threading.Lock()
 
@@ -59,44 +59,12 @@ class CrawlingThread(threading.Thread):
         logging.warning('Stopping ' + self.thread_name)
 
 
-def crawl(dirs_):
-    global no_files
-
-    while not tasks.empty():
-        if dirs_.empty():
-            pass
-        else:
-            root_dir = dirs_.get()
-            try:
-                print(root_dir)
-                files = os.listdir(root_dir)
-            except:
-                logging.warning("Exception!")
-            for file in files:
-                file_path_abs = os.path.join(root_dir, file)
-
-                if os.path.isdir(file_path_abs) and os.access(file_path_abs, os.R_OK):
-                    dirs_.put(file_path_abs)
-                    tasks.put(None)
-                elif os.path.islink(file_path_abs):
-                    # print(file)
-                    pass
-                else:
-                    # print(file)
-                    pass
-                with lock.acquire():
-                    no_files += 1
-            tasks.get()
-
-
 def crawl_tq(task_queue):
     global no_files
 
-    while task_queue.running_tasks():
-        if task_queue.no_directories():
-            pass
-        else:
-            root_dir = task_queue.get_directory()
+    while task_queue.are_running_tasks():
+        if task_queue.available_tasks():
+            root_dir = task_queue.get()
             try:
                 print(root_dir)
                 files = os.listdir(root_dir)
@@ -107,7 +75,6 @@ def crawl_tq(task_queue):
 
                 if os.path.isdir(file_path_abs) and os.access(file_path_abs, os.R_OK):
                     task_queue.put(file_path_abs)
-                    tasks.put(None)
                 elif os.path.islink(file_path_abs):
                     # print(file)
                     pass
@@ -120,18 +87,18 @@ def crawl_tq(task_queue):
             task_queue.task_finished()
 
 
-
 if __name__ == "__main__":
-    root_path = '/home'
-      
+    root_path = '/home.cezary/szeliga'
+    # root_path = '/home.cezary/kozlowski'
+    # root_path = '/home.cezary/welnicki'
+    # root_path = "/home.cezary/groupfiles/shared/sales"
+
     n = 5
 
     task_queue.put(root_path)
 
-    # dirs.put(root_path)
-    # tasks.put(None)
     threads = []
-    for i in range(1,n+1):
+    for i in range(1, n+1):
         thread = CrawlingThread("thread"+str(i))
         threads.append(thread)
 
