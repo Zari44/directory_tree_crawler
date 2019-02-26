@@ -3,30 +3,13 @@ import queue
 import threading
 import logging
 import time
+from pathlib import Path
 
 
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(message)s'
 )
-
-
-lock = threading.Lock()
-
-no_files = 0
-
-
-# class CrawlingThread(threading.Thread):
-#
-#     def __init__(self, thread_name):
-#         threading.Thread.__init__(self)
-#         self.thread_name = thread_name
-#
-#     def run(self):
-#         logging.warning('Starting ' + self.thread_name)
-#         crawl_tq(task_queue)
-#         logging.warning('Stopping ' + self.thread_name)
-
 
 
 class TaskQueue:
@@ -55,82 +38,88 @@ class TaskQueue:
         self._running_tasks.get()
 
 
+class CrawlingThread(threading.Thread):
+
+    def __init__(self, _id):
+        threading.Thread.__init__(self)
+        self._id = _id
+
+    def run(self):
+        logging.warning('Starting Thread ', self._id)
+        ThreadedCrawler.__crawl()
+        logging.warning('Stopping Thread ', self._id)
+
+
 class ThreadedCrawler:
 
     def __init__(self, root_dir, no_threads):
+        self._root_dir = root_dir
+        self._no_threads = no_threads
         self._task_queue = TaskQueue()
         self._task_queue.put(root_dir)
         self._threads = []
-        self.__create_thread_pool(no_threads)
+        self.__create_threads(no_threads)
+        self._lock = threading.Lock()
+        self._no_files_visited = 0
 
-    def __create_thread_pool(self, no_threads):
-        logging.warning("About to create thread")
-        for i in range(1, no_threads + 1):
-            thread = threading.Thread(target=self.__crawl())
-            logging.warning("Was it started?")
-            self._threads.append(thread)
+    def __create_threads(self, no_threads):
+        self._threads = [threading.Thread(target=self.__crawl) for _ in range(no_threads)]# CrawlingThread(i)
 
     def start_crawling(self):
-        for thread in self._threads:
-            thread.start()
 
+        logging.warning("Started crawling files starting from root directory '%s' utilising %s threads",
+                        self._root_dir, self._no_threads)
+
+        for thread in self._threads:
+            logging.warning("Starting new thread")
+            thread.start()
 
         for thread in self._threads:
             thread.join()
 
     def __crawl(self):
-        global no_files
-
         while self._task_queue .are_running_tasks():
             if self._task_queue .available_tasks():
                 root_dir = self._task_queue .get()
+                files = []
                 try:
-                    print(root_dir)
                     files = os.listdir(root_dir)
-                except:
-                    logging.warning("Exception!")
+                    print(root_dir)
+                except OSError as e:
+                    print(str(e))
+                except UnicodeError as e:
+                    print(str(e))
                 for file in files:
                     file_path_abs = os.path.join(root_dir, file)
 
-                    if os.path.isdir(file_path_abs) and os.access(file_path_abs, os.R_OK):
+                    if os.path.isdir(file_path_abs):
                         self._task_queue .put(file_path_abs)
                     elif os.path.islink(file_path_abs):
-                        # print(file)
-                        pass
+                        first_target = os.readlink(file_path_abs)
+                        ultimate_target = ""
+                        if os.path.islink(first_target):
+                            ultimate_target = "->" + Path(file_path_abs).resolve()
+                        print(file, '->', first_target, ultimate_target)
                     else:
-                        # print(file)
-                        pass
+                        print(file)
 
-                    with lock:
-                        no_files += 1
-                self._task_queue .task_finished()
+                    with self._lock:
+                        self._no_files_visited += 1
+                self._task_queue.task_finished()
 
-
-
-
-# task_queue = TaskQueue()
-
-
-
+    def get_no_files_visited(self):
+        return self._no_files_visited
 
 
 if __name__ == "__main__":
-    root_path = '/home.cezary/szeliga'
-    # root_path = '/home.cezary/kozlowski'
-    # root_path = '/home.cezary/welnicki'
-    # root_path = "/home.cezary/groupfiles/shared/sales"
 
+    root_path = '/home/'
     n = 5
-
-    start = time.time()
-
 
     crawler = ThreadedCrawler(root_path, n)
 
-
+    start = time.time()
     crawler.start_crawling()
-
     logging.warning("Time took: %0.2f", time.time()-start)
-    logging.warning("Visited %s files ", no_files)
 
-    logging.warning("Exiting Main Thread")
+    logging.warning("%s files were accessed from '%s'", crawler.get_no_files_visited(), root_path)
