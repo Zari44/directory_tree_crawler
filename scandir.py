@@ -10,21 +10,26 @@ logging.basicConfig(
     format='%(message)s'
 )
 
+
 def crawl(dirs):
     while dirs.qsize():
         files = []
         symlinks = []
         directories = []
         dir_path = dirs.get()
-        for entry in os.scandir(dir_path):
-            if entry.is_symlink():
-                symlinks.append(entry)
-            elif entry.is_dir():
-                dirs.put(entry.path)
-                directories.append(entry)
-            else:
-                files.append(entry)
-        yield {dir_path: [directories, files, symlinks]}
+        try:
+            for entry in os.scandir(dir_path):
+                if entry.is_symlink():
+                    symlinks.append(entry)
+                elif entry.is_dir():
+                    dirs.put(entry.path)
+                    directories.append(entry)
+                else:
+                    files.append(entry)
+        except OSError as e:
+            print("Error occured: %s" % str(e))
+        finally:
+            yield {dir_path: [directories, files, symlinks]}
 
 
 def print_dict(dirs_dict):
