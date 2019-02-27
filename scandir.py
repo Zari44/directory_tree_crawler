@@ -33,13 +33,13 @@ def crawl(dirs):
 
 
 def print_dict(dirs_dict):
-    for catalog in dirs_dict:
-        print(catalog)
-        for directory in dirs_dict[catalog][0]:
+    for root_catalog in dirs_dict:
+        print(root_catalog)
+        for directory in dirs_dict[root_catalog][0]:
             print("\t", directory.name)
-        for file in dirs_dict[catalog][1]:
+        for file in dirs_dict[root_catalog][1]:
             print("\t", file.name)
-        for symlink in dirs_dict[catalog][2]:
+        for symlink in dirs_dict[root_catalog][2]:
             print("\t", symlink.name, "->", os.readlink(symlink.path))
 
 
@@ -47,7 +47,8 @@ if __name__ == "__main__":
 
     # root_path = '/home/zarudzki_biz9ld/java_workspace'
     # root_path = '/home/zarudzki_biz9ld/Downloads/Postman/app/resources/app/node_modules/@postman/app-plugins-host/node_modules/@postman/app-logger/node_modules/readable-stream/lib/internal/'
-    root_path = './tests'
+    # root_path = './tests'
+    root_path = '/home/zarudzki_biz9ld/'
     n = 5
 
     print("Starting the scanner in root directory: '%s'" % (root_path))
